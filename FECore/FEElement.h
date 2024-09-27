@@ -57,7 +57,7 @@ public:
 	void Clear() { for (size_t i=0; i<m_data.size(); ++i) delete m_data[i]; m_data.clear(); }
 
 	//! create 
-	void Create(int n) { m_data.assign(n, static_cast<FEMaterialPoint*>(0) ); }
+	void Create(int n) { Clear(); m_data.assign(n, static_cast<FEMaterialPoint*>(0)); }
 
 	//! operator for easy access to element data
 	FEMaterialPoint*& operator [] (int n) { return m_data[n]; }
@@ -160,6 +160,7 @@ public:
 	{ 
 		pmp->m_elem = this;
 		pmp->m_index = n;
+		if (m_State[n] != nullptr) delete m_State[n];
 		m_State[n] = pmp; 
 	}
 
@@ -184,9 +185,6 @@ public:
 	// see if this element has the node n
     bool HasNode(int n) const;
 
-    // see if this element has the list of nodes n
-    int HasNodes(int* n, const int ns) const;
-    
 	// find local element index of node n
     int FindNode(int n) const;
 
@@ -313,6 +311,28 @@ public:
 	FELineElement& operator = (const FELineElement& el);
 
 	void SetTraits(FEElementTraits* pt);
+
+	double* GaussWeights() { return &((FELineElementTraits*)(m_pT))->gw[0]; }			// weights of integration points
+
+	double* Gr(int n) const { return ((FELineElementTraits*)(m_pT))->Gr[n]; }	// shape function derivative to r
+
+	vec3d eval(vec3d* d, int n)
+	{
+		int ne = Nodes();
+		double* N = H(n);
+		vec3d a(0, 0, 0);
+		for (int i = 0; i < ne; ++i) a += d[i] * N[i];
+		return a;
+	}
+
+	vec3d eval_deriv(vec3d* d, int j)
+	{
+		double* Hr = Gr(j);
+		int n = Nodes();
+		vec3d v(0, 0, 0);
+		for (int i = 0; i < n; ++i) v += d[i] * Hr[i];
+		return v;
+	}
 };
 
 //-----------------------------------------------------------------------------

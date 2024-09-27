@@ -260,6 +260,22 @@ public:
 };
 
 //-----------------------------------------------------------------------------
+//! Enclosed volume change
+//!
+class FEPlotEnclosedVolumeChange : public FEPlotSurfaceData
+{
+private:
+    bool                m_binit;
+    vector<FEElement*>  m_elem;
+    vector<vec3d>       m_area;
+    
+public:
+    FEPlotEnclosedVolumeChange(FEModel* pfem) : FEPlotSurfaceData(pfem, PLT_FLOAT, FMT_REGION){ m_binit = true; SetUnits(UNIT_VOLUME);
+    }
+    bool Save(FESurface& surf, FEDataStream& a);
+};
+
+//-----------------------------------------------------------------------------
 //! Surface area
 //!
 class FEPlotSurfaceArea : public FEPlotSurfaceData
@@ -424,6 +440,45 @@ class FEPlotSpecificStrainEnergy : public FEPlotDomainData
 public:
 	FEPlotSpecificStrainEnergy(FEModel* pfem) : FEPlotDomainData(pfem, PLT_FLOAT, FMT_ITEM){}
 	bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//-----------------------------------------------------------------------------
+//! Strain energy density in mixture components
+class FEPlotMixtureStrainEnergyDensity : public FEPlotDomainData
+{
+public:
+    FEPlotMixtureStrainEnergyDensity(FEModel* pfem);
+    bool SetFilter(const char* szfilter) override;
+    bool Save(FEDomain& dom, FEDataStream& a) override;
+protected:
+    int        m_comp;
+    int        m_mat;
+};
+
+//-----------------------------------------------------------------------------
+//! Deviatoric strain energy density in mixture components
+class FEPlotMixtureDevStrainEnergyDensity : public FEPlotDomainData
+{
+public:
+    FEPlotMixtureDevStrainEnergyDensity(FEModel* pfem);
+    bool SetFilter(const char* szfilter) override;
+    bool Save(FEDomain& dom, FEDataStream& a) override;
+protected:
+    int        m_comp;
+    int        m_mat;
+};
+
+//-----------------------------------------------------------------------------
+//! Specific strain energy in mixture components
+class FEPlotMixtureSpecificStrainEnergy : public FEPlotDomainData
+{
+public:
+    FEPlotMixtureSpecificStrainEnergy(FEModel* pfem);
+    bool SetFilter(const char* szfilter) override;
+    bool Save(FEDomain& dom, FEDataStream& a) override;
+protected:
+    int        m_comp;
+    int        m_mat;
 };
 
 //-----------------------------------------------------------------------------
@@ -631,7 +686,7 @@ public:
 class FEPlotElementElasticity : public FEPlotDomainData
 {
 public:
-	FEPlotElementElasticity(FEModel* pfem) : FEPlotDomainData(pfem, PLT_TENS4FS, FMT_ITEM){}
+    FEPlotElementElasticity(FEModel* pfem) : FEPlotDomainData(pfem, PLT_TENS4FS, FMT_ITEM) { SetUnits(UNIT_PRESSURE); }
 	bool Save(FEDomain& dom, FEDataStream& a);
 };
 
@@ -914,6 +969,14 @@ class FEPlotSPRLagrangeStrain : public FEPlotDomainData
 {
 public:
 	FEPlotSPRLagrangeStrain(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_NODE){}
+	bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//! SPR infinitesimal strains
+class FEPlotSPRInfStrain : public FEPlotDomainData
+{
+public:
+	FEPlotSPRInfStrain(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_NODE) {}
 	bool Save(FEDomain& dom, FEDataStream& a);
 };
 
@@ -1374,5 +1437,26 @@ class FEPlotBeamCurvature : public FEPlotDomainData
 {
 public:
 	FEPlotBeamCurvature(FEModel* pfem) : FEPlotDomainData(pfem, PLT_VEC3F, FMT_ITEM) {}
+	bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+// plot the current pressure value of the FEIdealGasPressure load
+class FEIdealGasPressure;
+class FEPlotIdealGasPressure : public FEPlotSurfaceData
+{
+public:
+	FEPlotIdealGasPressure(FEModel* fem) : FEPlotSurfaceData(fem, PLT_FLOAT, FMT_REGION) {}
+	bool Save(FESurface& surf, FEDataStream& a) override;
+
+private:
+	bool Init() override;
+	bool m_binit = false;
+	FEIdealGasPressure* m_load = nullptr;
+};
+
+class FEPlotBodyForce : public FEPlotDomainData
+{
+public:
+	FEPlotBodyForce(FEModel* pfem) : FEPlotDomainData(pfem, PLT_VEC3F, FMT_ITEM) { SetUnits(UNIT_SPECIFIC_FORCE); }
 	bool Save(FEDomain& dom, FEDataStream& a);
 };

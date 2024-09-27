@@ -35,6 +35,7 @@ SOFTWARE.*/
 #include "FECarreauYasudaFluid.h"
 #include "FEPowellEyringFluid.h"
 #include "FECrossFluid.h"
+#include "FEQuemadaFluid.h"
 #include "FEFluidFSI.h"
 #include "FEBiphasicFSI.h"
 #include "FEIdealGasIsentropic.h"
@@ -83,11 +84,11 @@ SOFTWARE.*/
 
 #include "FEConstFluidBodyForce.h"
 #include "FECentrifugalFluidBodyForce.h"
+#include "FEFluidMovingFrameLoad.h"
 
 #include "FEFluidModule.h"
 
 #include "FEFluidAnalysis.h"
-#include <FECore/FEModelUpdate.h>
 #include <FECore/FETimeStepController.h>
 
 //-----------------------------------------------------------------------------
@@ -140,6 +141,7 @@ REGISTER_FECORE_CLASS(FECarreauFluid      , "Carreau"       );
 REGISTER_FECORE_CLASS(FECarreauYasudaFluid, "Carreau-Yasuda");
 REGISTER_FECORE_CLASS(FEPowellEyringFluid , "Powell-Eyring" );
 REGISTER_FECORE_CLASS(FECrossFluid        , "Cross"         );
+REGISTER_FECORE_CLASS(FEQuemadaFluid      , "Quemada"       );
 
 // elastic fluids
 REGISTER_FECORE_CLASS(FEIdealGasIsentropic, "ideal gas isentropic");
@@ -171,6 +173,7 @@ REGISTER_FECORE_CLASS(FEFluidRCLoad                , "fluid RC"                 
 // body loads
 REGISTER_FECORE_CLASS(FEConstFluidBodyForce      , "fluid body force");
 REGISTER_FECORE_CLASS(FECentrifugalFluidBodyForce, "fluid centrifugal force");
+REGISTER_FECORE_CLASS(FEFluidMovingFrameLoad     , "fluid moving frame");
 
 //-----------------------------------------------------------------------------
 // boundary conditions
@@ -209,6 +212,7 @@ REGISTER_FECORE_CLASS(FEPlotNodalFluidTemperature      , "nodal fluid temperatur
 REGISTER_FECORE_CLASS(FEPlotFluidDilatation            , "fluid dilatation"         );
 REGISTER_FECORE_CLASS(FEPlotFluidEffectivePressure     , "effective fluid pressure" );
 REGISTER_FECORE_CLASS(FEPlotElasticFluidPressure	   , "elastic fluid pressure"   );
+REGISTER_FECORE_CLASS(FEPlotFluidBodyForce             , "fluid body force"         );
 REGISTER_FECORE_CLASS(FEPlotFluidVolumeRatio		   , "fluid volume ratio"       );
 REGISTER_FECORE_CLASS(FEPlotFluidDensity               , "fluid density"            );
 REGISTER_FECORE_CLASS(FEPlotFluidDensityRate           , "fluid density rate"       );
@@ -243,6 +247,8 @@ REGISTER_FECORE_CLASS(FEPlotFluidElementAngularMomentum, "fluid element angular 
 REGISTER_FECORE_CLASS(FEPlotFluidElementCenterOfMass   , "fluid element center of mass");
 REGISTER_FECORE_CLASS(FEPlotFluidFlowRate              , "fluid flow rate"               );
 REGISTER_FECORE_CLASS(FEPlotFluidPressure              , "fluid pressure"                );
+REGISTER_FECORE_CLASS(FEPlotFluidPressureTangentTemperature, "fluid pressure tangent temperature");
+REGISTER_FECORE_CLASS(FEPlotFluidPressureTangentStrain , "fluid pressure tangent strain" );
 REGISTER_FECORE_CLASS(FEPlotFluidHeatFlux              , "fluid heat flux"               );
 REGISTER_FECORE_CLASS(FEPlotFluidRelativeReynoldsNumber, "fluid relative Reynolds number");
 REGISTER_FECORE_CLASS(FEPlotFluidSpecificFreeEnergy    , "fluid specific free energy"    );
@@ -299,28 +305,5 @@ REGISTER_FECORE_CLASS(FEFSIErosionVolumeRatio, "fsi-volume-erosion");
 // Derived from FEMeshAdaptorCriterion
 REGISTER_FECORE_CLASS(FEFluidStressCriterion     , "fluid shear stress");
 
-//-----------------------------------------------------------------------------
-// Reset solver parameters to preferred default settings
-    febio.OnCreateEvent(CallWhenCreating<FENewtonStrategy>([](FENewtonStrategy* pc) {
-        pc->m_maxups = 50;
-    }));
-    
-    febio.OnCreateEvent(CallWhenCreating<FETimeStepController>([](FETimeStepController* pc) {
-        pc->m_iteopt = 50;
-    }));
-    
-    febio.OnCreateEvent(CallWhenCreating<FEFluidAnalysis>([](FEFluidAnalysis* pc) {
-        pc->m_nanalysis = FEFluidAnalysis::DYNAMIC;
-    }));
-    
-    febio.OnCreateEvent(CallWhenCreating<FENewtonSolver>([](FENewtonSolver* pc) {
-        pc->m_maxref = 5;
-        pc->m_Rmax = 1.0e+20;
-        // turn off reform on each time step and diverge reform
-        pc->m_breformtimestep = false;
-        pc->m_bdivreform = false;
-    }));
-    
 febio.SetActiveModule(0);
-
 }

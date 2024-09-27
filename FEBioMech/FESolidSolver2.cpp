@@ -941,12 +941,18 @@ void FESolidSolver2::PrepStep()
 		if (plc && plc->IsActive()) plc->PrepStep();
 	}
 
+	for (int i = 0; i < fem.ModelLoads(); ++i)
+	{
+		FEModelLoad* pl = fem.ModelLoad(i);
+		if (pl->IsActive()) pl->PrepStep();
+	}
+
 	// see if we need to do contact augmentations
 	m_baugment = false;
 	for (int i = 0; i<fem.SurfacePairConstraints(); ++i)
 	{
 		FEContactInterface& ci = dynamic_cast<FEContactInterface&>(*fem.SurfacePairConstraint(i));
-		if (ci.IsActive() && (ci.m_laugon == 1)) m_baugment = true;
+		if (ci.IsActive() && (ci.m_laugon == FECore::AUGLAG_METHOD)) m_baugment = true;
 	}
 
 	// see if we need to do incompressible augmentations
@@ -1057,7 +1063,7 @@ bool FESolidSolver2::Quasin()
 		normE1 = fabs(ui*m_R1);
 
 		m_residuNorm.norm = normR1;
-		m_energyNorm.norm = normR1;
+		m_energyNorm.norm = normE1;
 		m_solutionNorm[0].norm = normu;
 
 		// check for nans

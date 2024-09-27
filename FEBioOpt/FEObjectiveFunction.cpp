@@ -73,17 +73,21 @@ double FEObjectiveFunction::Evaluate(vector<double>& y)
 	// get the measurement vector
 	vector<double> y0(ndata);
 	GetMeasurements(y0);
-    
-    // evaluate regression coefficient R^2
+
+	vector<double> x(ndata);
+	for (int i = 0; i < ndata; ++i) x[i] = i + 1;
+	GetXValues(x);
+
+	// evaluate regression coefficient R^2
 	double rsq = RegressionCoefficient(y0, y);
 
 	double chisq = 0.0;
-	if (m_verbose) feLog("               CURRENT        REQUIRED      DIFFERENCE\n");
+	if (m_verbose) feLog("                        CURRENT        REQUIRED      DIFFERENCE\n");
 	for (int i = 0; i<ndata; ++i)
 	{
 		double dy = (y[i] - y0[i]);
 		chisq += dy*dy;
-		if (m_verbose) feLog("%5d: %15.10lg %15.10lg %15lg\n", i + 1, y[i], y0[i], fabs(y[i] - y0[i]));
+		if (m_verbose) feLog("%15.10lg %15.10lg %15.10lg %15lg\n", x[i], y[i], y0[i], fabs(y[i] - y0[i]));
 	}
 	feLog("objective value: %lg\n", chisq);
     feLog("regression coef: %lg\n", rsq);
@@ -105,7 +109,9 @@ double FEObjectiveFunction::RegressionCoefficient(const std::vector<double>& y0,
 	xyb /= ndata;
 	x2b /= ndata; y2b /= ndata;
 
-	double rsq = pow(xyb - xb * yb, 2) / (x2b - xb * xb) / (y2b - yb * yb);
+	double D = (x2b - xb * xb) * (y2b - yb * yb);
+
+	double rsq = (D != 0 ? pow(xyb - xb * yb, 2) / D : 0);
 	return rsq;
 }
 
@@ -184,36 +190,79 @@ void FEDataFitObjective::GetMeasurements(vector<double>& y0)
 	for (int i = 0; i<ndata; ++i) y0[i] = m_lc.Point(i).y();
 }
 
+void FEDataFitObjective::GetXValues(std::vector<double>& x)
+{
+	x = m_x;
+}
+
 //----------------------------------------------------------------------------
 void FEDataFitObjective::EvaluateFunctions(vector<double>& f)
 {
 	int ndata = m_lc.Points();
+	m_x.resize(ndata);
 	for (int i = 0; i<ndata; ++i)
 	{
 		double xi = m_lc.Point(i).x();
+		m_x[i] = xi;
 		f[i] = m_src->Evaluate(xi);
 	}
 }
 
 //=============================================================================
+
+bool FEMinimizeObjective::ParamFunction::Init()
+{
+	if (!Function::Init()) return false;
+
+	FEParamValue val = m_fem->GetParameterValue(ParamString(m_name.c_str()));
+	if (val.isValid() == false) return false;
+	if (val.type() != FE_PARAM_DOUBLE) return false;
+	m_var = (double*)val.data_ptr();
+	if (m_var == nullptr) return false;
+	return true;
+}
+
+FEMinimizeObjective::FilterAvgFunction::FilterAvgFunction(FEModel* fem, FELogElemData* pd, FEElementSet* elemSet, double trg) : Function(fem)
+{
+	m_pd = pd;
+	m_elemSet = elemSet;
+	m_y0 = trg;
+}
+
+bool FEMinimizeObjective::FilterAvgFunction::Init()
+{
+	if (!Function::Init()) return false;
+	if (m_pd == nullptr) return false;
+	if (m_elemSet == nullptr) return false;
+	return true;
+}
+
+double FEMinimizeObjective::FilterAvgFunction::Value() const
+{
+	int NE = m_elemSet->Elements();
+	double sum = 0.0;
+	for (int i = 0; i < NE; ++i)
+	{
+		sum += m_pd->value(m_elemSet->Element(i));
+	}
+	sum /= (double)NE;
+
+	return sum;
+}
+
 FEMinimizeObjective::FEMinimizeObjective(FEModel* fem) : FEObjectiveFunction(fem)
 {
 }
 
-bool FEMinimizeObjective::AddFunction(const char* szname, double targetValue)
+FEMinimizeObjective::~FEMinimizeObjective()
 {
-	// make sure we have a model
-	FEModel* fem = GetFEModel();
-	if (fem == 0) return false;
+	for (Function* f : m_Func) delete f;
+	m_Func.clear();
+}
 
-	// create a new function
-	Function fnc;
-	fnc.name = szname;
-	fnc.y0 = targetValue;
-
-	m_Func.push_back(fnc);
-
-	return true;
+void FEMinimizeObjective::AddFunction(FEMinimizeObjective::Function* func)
+{
+	m_Func.push_back(func);
 }
 
 bool FEMinimizeObjective::Init()
@@ -221,17 +270,13 @@ bool FEMinimizeObjective::Init()
 	if (FEObjectiveFunction::Init() == false) return false;
 
 	FEModel* fem = GetFEModel();
-	if (fem == 0) return false;
+	if (fem == nullptr) return false;
 
 	int N = (int) m_Func.size();
 	for (int i=0; i<N; ++i)
 	{
-		Function& Fi = m_Func[i];
-		FEParamValue val = fem->GetParameterValue(ParamString(Fi.name.c_str()));
-		if (val.isValid() == false) return false;
-		if (val.type() != FE_PARAM_DOUBLE) return false;
-		Fi.var = (double*) val.data_ptr();
-		if (Fi.var == 0) return false;
+		Function& Fi = *m_Func[i];
+		if (Fi.Init() == false) return false;
 	}
 
 	return true;
@@ -242,16 +287,14 @@ int FEMinimizeObjective::Measurements()
 	return (int) m_Func.size();
 }
 
-
 void FEMinimizeObjective::EvaluateFunctions(vector<double>& f)
 {
 	int N = (int)m_Func.size();
 	f.resize(N);
 	for (int i=0; i<N; ++i)
 	{
-		Function& Fi = m_Func[i];
-		if (Fi.var) f[i] = *Fi.var;
-		else f[i] = 0;
+		Function& Fi = *m_Func[i];
+		f[i] = Fi.Value();
 	}
 }
 
@@ -261,7 +304,7 @@ void FEMinimizeObjective::GetMeasurements(vector<double>& y)
 	y.resize(N);
 	for (int i=0; i<N; ++i)
 	{
-		y[i] = m_Func[i].y0;
+		y[i] = m_Func[i]->Target();
 	}
 }
 

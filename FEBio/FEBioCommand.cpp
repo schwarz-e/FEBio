@@ -305,7 +305,7 @@ int FEBioCmd_Config::run(int nargs, char* argv[])
 	}
 	else if (nargs == 2)
 	{
-		sprintf(ops.szcnf, "%s", argv[1]);
+		snprintf(ops.szcnf, sizeof(ops.szcnf), "%s", argv[1]);
 		feApp->Configure(ops.szcnf);
 	}
 	else return invalid_nr_args();
@@ -510,7 +510,7 @@ int FEBioCmd_svg::run(int nargs, char **argv)
 		strcpy(buf, szfile);
 		char* ch = strrchr(buf, '.');
 		if (ch) *ch = 0;
-		sprintf(szsvg, "%s.svg", buf);
+		snprintf(szsvg, sizeof(szsvg), "%s.svg", buf);
 
 		std::filebuf fb;
 		fb.open(szsvg, std::ios::out);
@@ -547,8 +547,8 @@ int FEBioCmd_out::run(int nargs, char **argv)
 		strcpy(buf, szfile);
 		char* ch = strrchr(buf, '.');
 		if (ch) *ch = 0;
-		sprintf(szK, "%s.out", buf);
-		sprintf(szR, "%s_rhs.out", buf);
+		snprintf(szK, sizeof(szK), "%s.out", buf);
+		snprintf(szR, sizeof(szR), "%s_rhs.out", buf);
 
 		febio::write_hb(*A, szK, mode);
 		febio::write_vector(R, szR, mode);
@@ -741,7 +741,7 @@ int FEBioCmd_set::run(int nargs, char** argv)
 	FEBioModel* fem = GetFEM();
 	if (nargs == 1)
 	{
-		printf("output_negative_jacobians = %d\n", (NegativeJacobian::m_boutput ? 1 : 0));
+		printf("output_negative_jacobians = %d\n", NegativeJacobian::m_maxout);
 		if (fem)
 		{
 			printf("print_model_params        = %d\n", (fem->GetPrintParametersFlag() ? 1 : 0));
@@ -760,7 +760,7 @@ int FEBioCmd_set::run(int nargs, char** argv)
 
 	if (strcmp(argv[1], "output_negative_jacobians") == 0)
 	{
-		NegativeJacobian::m_boutput = (n != 0);
+		NegativeJacobian::m_maxout = n;
 		printf("output_negative_jacobians = %d", n);
 	}
 	else if (fem && strcmp(argv[1], "print_model_params") == 0)

@@ -257,9 +257,9 @@ bool FEBioApp::ParseCmdLine(int nargs, char* argv[])
 	// set initial configuration file name
 	if (ops.szcnf[0] == 0)
 	{
-		char szpath[1024] = { 0 };
-		febio::get_app_path(szpath, 1023);
-		sprintf(ops.szcnf, "%sfebio.xml", szpath);
+		char szpath[512] = { 0 };
+		febio::get_app_path(szpath, 511);
+		snprintf(ops.szcnf, sizeof(ops.szcnf), "%sfebio.xml", szpath);
 	}
 
 	// loop over the arguments
@@ -337,7 +337,7 @@ bool FEBioApp::ParseCmdLine(int nargs, char* argv[])
 			if (szext == 0)
 			{
 				// we assume a default extension of .feb if none is provided
-				sprintf(ops.szfile, "%s.feb", argv[i]);
+				snprintf(ops.szfile, sizeof(ops.szfile), "%s.feb", argv[i]);
 			}
 			else strcpy(ops.szfile, argv[i]);
 			ops.binteractive = false;
@@ -423,7 +423,6 @@ bool FEBioApp::ParseCmdLine(int nargs, char* argv[])
 		{
 			brun = false;
 		}
-
 		else if (strcmp(sz, "-import") == 0)
 		{
 			if ((i < nargs - 1) && (argv[i+1][0] != '-'))
@@ -433,6 +432,16 @@ bool FEBioApp::ParseCmdLine(int nargs, char* argv[])
 				fprintf(stderr, "FATAL ERROR: insufficient number of arguments for -import.\n");
 				return false;
 			}
+		}
+		else if (strncmp(sz, "-output_negative_jacobians", 26) == 0)
+		{
+			int n = -1;
+			if (sz[26] == '=')
+			{
+				const char* szval = sz + 27;
+				n = atoi(szval);
+			}
+			NegativeJacobian::m_maxout = n;
 		}
 		else if (sz[0] == '-')
 		{
@@ -448,7 +457,7 @@ bool FEBioApp::ParseCmdLine(int nargs, char* argv[])
 				if (szext == 0)
 				{
 					// we assume a default extension of .feb if none is provided
-					sprintf(ops.szfile, "%s.feb", sz);
+					snprintf(ops.szfile, sizeof(ops.szfile), "%s.feb", sz);
 				}
 				else
 				{
@@ -494,9 +503,9 @@ bool FEBioApp::ParseCmdLine(int nargs, char* argv[])
 		}
 		else strcpy(szlogbase, szbase);
 
-		if (!blog) sprintf(ops.szlog, "%s.log", szlogbase);
-		if (!bplt) sprintf(ops.szplt, "%s.xplt", szbase);
-		if (!bdmp) sprintf(ops.szdmp, "%s.dmp", szbase);
+		if (!blog) snprintf(ops.szlog, sizeof(ops.szlog), "%s.log", szlogbase);
+		if (!bplt) snprintf(ops.szplt, sizeof(ops.szplt), "%s.xplt", szbase);
+		if (!bdmp) snprintf(ops.szdmp, sizeof(ops.szdmp), "%s.dmp", szbase);
 	}
 	else if (ops.szctrl[0])
 	{
@@ -505,9 +514,9 @@ bool FEBioApp::ParseCmdLine(int nargs, char* argv[])
 		char* ch = strrchr(szbase, '.');
 		if (ch) *ch = 0;
 
-		if (!blog) sprintf(ops.szlog, "%s.log", szbase);
-		if (!bplt) sprintf(ops.szplt, "%s.xplt", szbase);
-		if (!bdmp) sprintf(ops.szdmp, "%s.dmp", szbase);
+		if (!blog) snprintf(ops.szlog, sizeof(ops.szlog), "%s.log", szbase);
+		if (!bplt) snprintf(ops.szplt, sizeof(ops.szplt), "%s.xplt", szbase);
+		if (!bdmp) snprintf(ops.szdmp, sizeof(ops.szdmp), "%s.dmp", szbase);
 	}
 
 	return brun;

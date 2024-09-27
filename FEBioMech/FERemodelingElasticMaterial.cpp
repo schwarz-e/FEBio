@@ -73,8 +73,8 @@ void FERemodelingMaterialPoint::Serialize(DumpStream& ar)
 //-----------------------------------------------------------------------------
 // define the material parameters
 BEGIN_FECORE_CLASS(FERemodelingElasticMaterial, FEElasticMaterial)
-	ADD_PARAMETER(m_rhormin, "min_density");
-	ADD_PARAMETER(m_rhormax, "max_density");
+	ADD_PARAMETER(m_rhormin, "min_density")->setUnits(UNIT_DENSITY)->setLongName("min density");
+	ADD_PARAMETER(m_rhormax, "max_density")->setUnits(UNIT_DENSITY)->setLongName("max density");
 
 	ADD_PROPERTY(m_pBase, "solid");
 	ADD_PROPERTY(m_pSupp, "supply");
@@ -93,6 +93,14 @@ FERemodelingElasticMaterial::FERemodelingElasticMaterial(FEModel* pfem) : FEElas
 double FERemodelingElasticMaterial::StrainEnergyDensity(FEMaterialPoint& mp)
 {
 	return (dynamic_cast<FERemodelingInterface*>((FEElasticMaterial*)m_pBase))->StrainEnergy(mp);
+}
+
+//-----------------------------------------------------------------------------
+//! evaluate referential mass density
+double FERemodelingElasticMaterial::Density(FEMaterialPoint& mp)
+{
+    FERemodelingMaterialPoint& rpt = *(mp.ExtractData<FERemodelingMaterialPoint>());
+    return rpt.m_rhor;
 }
 
 //-----------------------------------------------------------------------------

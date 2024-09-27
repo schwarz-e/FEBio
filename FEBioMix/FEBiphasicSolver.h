@@ -107,6 +107,7 @@ public:
 	// additional convergence norms
 	double	m_Dtol;			//!< displacement tolerance
 	double	m_Ptol;			//!< pressure tolerance
+    double  m_Ctol;         //!< needed only for biphasic-solute analyses
 
 	// biphasic formulation
 	int		m_biphasicFormulation;	// = 0: standard, =1: mixed (linear pressure)
@@ -118,7 +119,6 @@ public:
 	vector<int>		m_nceq;	//!< number of equations related to concentration dofs
 
 	vector<double> m_Fr;	//!< nodal reaction forces
-	vector<double> m_Uip;	//!< previous converged displacement increment
 
 	// poro data
 	vector<double>	m_di;	//!< displacement increment vector

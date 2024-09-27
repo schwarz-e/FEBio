@@ -57,43 +57,25 @@ bool FEModelParameter::Init()
 		return false;
 	}
 
-    switch (val.type()) {
-        case FE_PARAM_DOUBLE:
-        {
-            // make sure we have a valid data pointer
-            double* pd = (double*) val.data_ptr();
-            if (pd == 0)
-            {
-                feLogError("Invalid data pointer for parameter %s", name.c_str());
-                return false;
-            }
-            
-            // store the pointer to the parameter
-            m_pd = pd;
-        }
-            break;
-            
-        case FE_PARAM_VEC2D:
-        {
-            // make sure we have a valid data pointer
-            vec2d* vd = (vec2d*) val.data_ptr();
-            if (vd == 0)
-            {
-                feLogError("Invalid data pointer for parameter %s", name.c_str());
-                return false;
-            }
-            // store the pointer to the parameter
-            m_pd = &vd->y();
-        }
-            break;
-            
-       default:
-        {
-            feLogError("Invalid parameter type for parameter %s", name.c_str());
-            return false;
-        }
-            break;
-    }
+	// Make sure it's a double
+	if (val.type() == FE_PARAM_DOUBLE)
+	{
+		// make sure we have a valid data pointer
+		double* pd = (double*)val.data_ptr();
+		if (pd == 0)
+		{
+			feLogError("Invalid data pointer for parameter %s", name.c_str());
+			return false;
+		}
+
+		// store the pointer to the parameter
+		m_pd = pd;
+	}
+	else
+	{
+		feLogError("Invalid parameter type for parameter %s", name.c_str());
+		return false;
+	}
 
 	return true;
 }
@@ -183,16 +165,21 @@ bool FEOptimizeData::Solve()
 	{
 		feLog("\nP A R A M E T E R   O P T I M I Z A T I O N   R E S U L T S\n\n");
 
-		feLog("\tFunction values:\n\n");
+		vector<double> xmin(ymin.size(), 0);
+		for (int i = 0; i < (int)ymin.size(); ++i) xmin[i] = i + 1;
+		m_obj->GetXValues(xmin);
+
+		feLog("\tFunction values:\n");
+		feLog("              X            F(X)\n");
 		for (int i=0; i<(int) ymin.size(); ++i)
-			feLog("\t\t%15lg\n", ymin[i]);
+			feLog("%15lg %15lg\n", xmin[i], ymin[i]);
 
 		// evaluate final regression coefficient
 		vector<double> y0;
 		m_obj->GetMeasurements(y0);
 		double minR2 = m_obj->RegressionCoefficient(y0, ymin);
 
-		feLog("\tTotal iterations ........ : %15d\n\n", m_niter);
+		feLog("\n\tTotal iterations ........ : %15d\n\n", m_niter);
 		feLog("\tFinal objective value ... : %15lg\n\n", minObj);
         feLog("\tFinal regression coef ... : %15lg\n\n", minR2);
 		feLog("\tOptimal parameters:\n\n");

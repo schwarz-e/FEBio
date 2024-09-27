@@ -31,10 +31,11 @@ SOFTWARE.*/
 #include "FEElasticDomain.h"
 #include "FESolidMaterial.h"
 #include <FECore/FEDofList.h>
+#include "febiomech_api.h"
 
 //-----------------------------------------------------------------------------
 //! Domain described by 3D truss elements
-class FEElasticTrussDomain : public FETrussDomain, public FEElasticDomain
+class FEBIOMECH_API FEElasticTrussDomain : public FETrussDomain, public FEElasticDomain
 {
 public:
 	//! Constructor
@@ -67,6 +68,8 @@ public:
 	//! get the dof list
 	const FEDofList& GetDOFList() const override;
 
+	double detJt(FETrussElement& el) const;
+
 public: // overloads from FEElasticDomain
 
 	//! update the truss stresses
@@ -75,8 +78,8 @@ public: // overloads from FEElasticDomain
 	//! internal stress forces
 	void InternalForces(FEGlobalVector& R) override;
 
-	//! calculate body force \todo implement this
-	void BodyForce(FEGlobalVector& R, FEBodyForce& bf) override { assert(false); }
+	//! calculate body force
+	void BodyForce(FEGlobalVector& R, FEBodyForce& bf) override;
 
 	//! Calculates inertial forces for dynamic problems
 	void InertialForces(FEGlobalVector& R, vector<double>& F) override { assert(false); }
