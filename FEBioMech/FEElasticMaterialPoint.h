@@ -94,6 +94,7 @@ public:
     
     // uncoupled pressure
     double      m_p;        //!< only for uncoupled materials
+    double      m_Lk;        //!< only for uncoupled materials
     
     // current time data
     double      m_Wt;       //!< strain energy density at current time
